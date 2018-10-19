@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameController : MonoBehaviour {
 
@@ -12,8 +13,8 @@ public class GameController : MonoBehaviour {
     public float _greatPlay;
     public float _nicePlay;
     public float _badPlay;
-    public float _waitForPlayerToStartTime;
 
+    private float _waitForPlayerToStartTime = 4.0f;
     private AudioSource[] _audioSources;
     private int _comPlayIndex = 0;
     private bool _played = false;
@@ -38,6 +39,24 @@ public class GameController : MonoBehaviour {
     private int _currentArrayCopyIndex = 0;
     private bool _timeForFreestyle = false;
     private bool _freestyleStarted = false;
+    private bool _crowdReactionFlag = false;
+    private bool _yourTurnFlag = false;
+    private bool _ratingFlag = false;
+    private bool _finalCrowdReaction = false;
+    private bool _finalWordFlag = false;
+    private bool _endGameFlag = false;
+    private bool _intro2Flag = false;
+    private bool _intro3Flag = false;
+    private bool _intro4Flag = false;
+    private bool _intro5Flag = false;
+    private bool _intro6Flag = false;
+    private bool _tryDuration = false;
+    private bool _gameStarted = false;
+    private float _tryDurationTimer = 50.0f;
+    private bool _finalWord;
+    private float _countdownTimer = 0.0f;
+    private int _noteSpammed = 0;
+    private float _freestyleDuration = 10.0f;
 
     // Use this for initialization
     void Start () {
@@ -45,19 +64,221 @@ public class GameController : MonoBehaviour {
         _currentSequenceLength = _comSequenceLength[_comSequenceLengthIndex];
         _playerPlayCooldown = new float[0];
         _playerWaitTime = 0.0f;
-        _totalPossibleScore = 40 * _playSequence.Length;
+        _totalPossibleScore = 40 * _playSequence.Length + 40;
+        _audioSources[20].Play();
+        _countdownTimer = 8.5f;
+        _intro2Flag = true;
 	}
 	
 	// Update is called once per frame
 	void Update () {
 
+        if (_endGameFlag)
+        {
+            Debug.Log("Proceed to next level");
+        }
+        else if (_countdownTimer > 0)
+        {
+            _countdownTimer -= Time.deltaTime;
+            if (_countdownTimer <= 0)
+            {
+                if (_crowdReactionFlag)
+                {
+                    _playerTurn = false;
+                    _crowdReactionFlag = false;
+                }
+                else if (_yourTurnFlag)
+                {
+                    _audioSources[8].Play();
+                    _playerTurn = true;
+                    _yourTurnFlag = false;
+                }
+                else if (_finalCrowdReaction)
+                {
+                    _audioSources[11].Play();
+                    _countdownTimer = 2.0f;
+                    _ratingFlag = true;
+                    _finalCrowdReaction = false;
+                }
+                else if (_ratingFlag)
+                {
+                    float rating = (float)_totalScore / (float)_totalPossibleScore;
+                    if (rating == 1)
+                    {
+                        _audioSources[12].Play();
+                        _finalWord = true;
+                    }
+                    else if (rating >= 0.9)
+                    {
+                        _audioSources[13].Play();
+                        _finalWord = true;
+                    }
+                    else if (rating >= 0.7)
+                    {
+                        _audioSources[14].Play();
+                        _finalWord = true;
+                    }
+                    else if (rating >= 0.5)
+                    {
+                        _audioSources[15].Play();
+                        _finalWord = false;
+                    }
+                    else if (rating >= 0.3)
+                    {
+                        _audioSources[16].Play();
+                        _finalWord = false;
+                    }
+                    else
+                    {
+                        _audioSources[17].Play();
+                        _finalWord = false;
+                    }
+                    _countdownTimer = 1.5f;
+                    _finalWordFlag = true;
+                    _ratingFlag = false;
+                }
+                else if (_finalWordFlag)
+                {
+                    if (_finalWord)
+                    {
+                        _audioSources[18].Play();
+                    }
+                    else
+                    {
+                        _audioSources[19].Play();
+                    }
+                    _finalWordFlag = false;
+                    _endGameFlag = true;
+                }
+                else if (_intro2Flag)
+                {
+                    _audioSources[8].Play();
+                    _countdownTimer = 1.0f;
+                    _intro3Flag = true;
+                    _intro2Flag = false;
+                }
+                else if (_intro3Flag)
+                {
+                    _audioSources[21].Play();
+                    _countdownTimer = 11.5f;
+                    _intro4Flag = true;
+                    _intro3Flag = false;
+                }
+                else if (_intro4Flag)
+                {
+                    _audioSources[9].Play();
+                    _countdownTimer = 1.5f;
+                    _intro5Flag = true;
+                    _intro4Flag = false;
+                }
+                else if (_intro5Flag)
+                {
+                    _audioSources[22].Play();
+                    _countdownTimer = 5.0f;
+                    _tryDuration = true;
+                    _intro5Flag = false;
+                }
+                else if (_intro6Flag)
+                {
+                    _audioSources[23].Play();
+                    _countdownTimer = 3.0f;
+                    _gameStarted = true;
+                    _intro6Flag = false;
+                }
+            }
+        }
+        else if (_tryDuration)
+        {
+            _tryDurationTimer -= Time.deltaTime;
+            if (Input.GetKeyDown("up"))
+            {
+                _audioSources[4].Play();
+            }
+            else if (Input.GetKeyDown("down"))
+            {
+                _audioSources[5].Play();
+            }
+            else if (Input.GetKeyDown("left"))
+            {
+                _audioSources[6].Play();
+            }
+            else if (Input.GetKeyDown("right"))
+            {
+                _audioSources[7].Play();
+            }
+            if (_tryDurationTimer <= 0)
+            {
+                _countdownTimer = 0.5f;
+                _intro6Flag = true;
+                _tryDuration = false;
+            }
+        }
+        // If freestyle event is triggered, start the freestyle
+        else if (_freestyleStarted)
+        {
+            _freestyleDuration -= Time.deltaTime;
+            if (Input.GetKeyDown("up"))
+            {
+                _audioSources[4].Play();
+                _noteSpammed += 1;
+            }
+            else if (Input.GetKeyDown("down"))
+            {
+                _audioSources[5].Play();
+                _noteSpammed += 1;
+            }
+            else if (Input.GetKeyDown("left"))
+            {
+                _audioSources[6].Play();
+                _noteSpammed += 1;
+            }
+            else if (Input.GetKeyDown("right"))
+            {
+                _audioSources[7].Play();
+                _noteSpammed += 1;
+            }
+            if (_freestyleDuration <= 0)
+            {
+                _freestyleStarted = false;
+                if (_noteSpammed >= 50)
+                {
+                    _totalScore += 40;
+                    _sectionScorePercentage = 1.0f;
+                }
+                else if (_noteSpammed > 40)
+                {
+                    _totalScore += 30;
+                    _sectionScorePercentage = 0.75f;
+                }
+                else if (_noteSpammed > 30)
+                {
+                    _totalScore += 20;
+                    _sectionScorePercentage = 0.5f;
+                }
+                else if (_noteSpammed > 20)
+                {
+                    _totalScore += 10;
+                    _sectionScorePercentage = 0.25f;
+                }
+                else
+                {
+                    _sectionScorePercentage = 0.1f;
+                }
+                _audioSources[10].volume = _sectionScorePercentage;
+                _audioSources[10].Play();
+                _countdownTimer = 6.0f;
+                _finalCrowdReaction = true;
+            }
+        }
         // Check if it's player's turn
-        if (!_playerTurn)
+        else if (!_playerTurn && _gameStarted)
         {
             
             // Check if it's time for the final freestyle event
             if (_timeForFreestyle)
             {
+                _timeForFreestyle = false;
+                _audioSources[9].Play();
                 _freestyleStarted = true;
             }
             // If it's not freestyle time, the player is still in regular sequence play mode
@@ -105,7 +326,8 @@ public class GameController : MonoBehaviour {
                     _currentSequenceLength--;
                     if (_currentSequenceLength == 0)
                     {
-                        _playerTurn = true;
+                        _countdownTimer = 3.0f;
+                        _yourTurnFlag = true;
                         
                         // Check if there are more sequence to be played after player's turn, if no, freestyle event should be triggered after player's turn
                         if (_comSequenceLengthIndex < _comSequenceLength.Length - 1)
@@ -130,7 +352,7 @@ public class GameController : MonoBehaviour {
             
         }
         // If it's player's turn
-        else
+        else if (_playerTurn && _gameStarted)
         {
             // Player has _waitForPlayerToStartTime amount of time to play the first note in the sequence, if player plays the right note during before this
             // time runs out, the player will score a perfect for this note. The player is considered to have started playing the current sequence once the
@@ -140,7 +362,7 @@ public class GameController : MonoBehaviour {
                 _waitForPlayerToStartTime -= Time.deltaTime;
                 if (Input.GetKeyDown("up"))
                 {
-                    _audioSources[0].Play();
+                    _audioSources[4].Play();
                     if (_playerPlaySequence[_playerPlayIndex] == 0)
                     {
                         _sectionScore += 40;
@@ -152,7 +374,7 @@ public class GameController : MonoBehaviour {
                 }
                 else if (Input.GetKeyDown("down"))
                 {
-                    _audioSources[1].Play();
+                    _audioSources[5].Play();
                     if (_playerPlaySequence[_playerPlayIndex] == 1)
                     {
                         _sectionScore += 40;
@@ -164,7 +386,7 @@ public class GameController : MonoBehaviour {
                 }
                 else if (Input.GetKeyDown("left"))
                 {
-                    _audioSources[2].Play();
+                    _audioSources[6].Play();
                     if (_playerPlaySequence[_playerPlayIndex] == 2)
                     {
                         _sectionScore += 40;
@@ -176,7 +398,7 @@ public class GameController : MonoBehaviour {
                 }
                 else if (Input.GetKeyDown("right"))
                 {
-                    _audioSources[3].Play();
+                    _audioSources[7].Play();
                     if (_playerPlaySequence[_playerPlayIndex] == 3)
                     {
                         _sectionScore += 40;
@@ -203,7 +425,7 @@ public class GameController : MonoBehaviour {
                 _playerNextPlayTime += Time.deltaTime;
                 if (Input.GetKeyDown("up"))
                 {
-                    _audioSources[0].Play();
+                    _audioSources[4].Play();
                     if (_playerPlaySequence[_playerPlayIndex] == 0)
                     {
                         _playerTimingDifference = Math.Abs(_playerNextPlayTime - _playerPlayCooldown[_playerPlayIndex]);
@@ -234,7 +456,7 @@ public class GameController : MonoBehaviour {
                 }
                 else if (Input.GetKeyDown("down"))
                 {
-                    _audioSources[1].Play();
+                    _audioSources[5].Play();
                     if (_playerPlaySequence[_playerPlayIndex] == 1)
                     {
                         _playerTimingDifference = Math.Abs(_playerNextPlayTime - _playerPlayCooldown[_playerPlayIndex]);
@@ -265,7 +487,7 @@ public class GameController : MonoBehaviour {
                 }
                 else if (Input.GetKeyDown("left"))
                 {
-                    _audioSources[2].Play();
+                    _audioSources[6].Play();
                     if (_playerPlaySequence[_playerPlayIndex] == 2)
                     {
                         _playerTimingDifference = Math.Abs(_playerNextPlayTime - _playerPlayCooldown[_playerPlayIndex]);
@@ -296,7 +518,7 @@ public class GameController : MonoBehaviour {
                 }
                 else if (Input.GetKeyDown("right"))
                 {
-                    _audioSources[3].Play();
+                    _audioSources[7].Play();
                     if (_playerPlaySequence[_playerPlayIndex] == 3)
                     {
                         _playerTimingDifference = Math.Abs(_playerNextPlayTime - _playerPlayCooldown[_playerPlayIndex]);
@@ -331,21 +553,21 @@ public class GameController : MonoBehaviour {
                 {
                     // Upon ending player's turn, reset everything for the current player sequence
                     _playerPlayCooldown = new float[0];
-                    _sectionScorePercentage = _sectionScore / _sectionPossibleScore;
+                    _sectionScorePercentage = (float)_sectionScore / (float)_sectionPossibleScore;
                     _sectionScore = 0;
                     _playerStarted = false;
-                    _waitForPlayerToStartTime = 3.0f;
+                    _waitForPlayerToStartTime = 4.0f;
                     _playerPlayIndex = 0;
-                    _playerTurn = false;                   
+                    if (_sectionScorePercentage == 0)
+                    {
+                        _sectionScorePercentage = 0.1f;
+                    }
+                    _audioSources[10].volume = _sectionScorePercentage;
+                    _audioSources[10].Play();
+                    _crowdReactionFlag = true;
+                    _countdownTimer = 6.0f;
                 }
-
             }            
-        }
-
-        // If freestyle event is triggered, start the freestyle
-        if (_freestyleStarted)
-        {
-            Debug.Log("Freestyle started");
         }
     }
 }
